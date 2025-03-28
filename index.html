@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/game-website/">
+    <title>游戏信息展示系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body { 
+            background-color: #f5f5f7; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        #upload-container { 
+            position: fixed; 
+            top:0; 
+            left:0; 
+            width:100%; 
+            height:100%; 
+            background: rgba(0,0,0,0.8); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 1000; 
+        }
+
+        #header { 
+            background-color: #1a1a1a; 
+            height:100px; 
+            padding:0 5%; 
+            display: flex; 
+            align-items: center; 
+        }
+
+        #logo { height:60px; }
+
+        #main { 
+            flex:1; 
+            background-color: #f5f5f7; 
+            padding:40px 5%; 
+            display: block; 
+        }
+
+        .grid-container {
+            max-width: 1600px;
+            margin: 30px auto;
+            overflow: visible;
+            padding: 0 50px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            position: relative;
+            overflow: visible !important;
+            justify-content: center;
+        }
+
+        .card {
+            width: 420px;
+            height: 450px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            position: relative;
+            transform-origin: center;
+            margin: 0 auto;
+        }
+
+        .card:hover {
+            width: 800px !important;
+            transform: translateY(-10px) scale(1.05);
+            z-index: 1000 !important;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.2) !important;
+        }
+
+        .card:hover .card-top,
+        .card:hover .card-middle,
+        .card:hover .card-bottom {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease-in;
+        }
+
+        .card-top {
+            height: 225px;
+            position: relative;
+            overflow: hidden;
+            transition: inherit;
+            z-index: 1;
+        }
+
+        .card-middle {
+            padding: 15px;
+            height: 165px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: inherit;
+        }
+
+        .card-bottom {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 30%);
+            transition: inherit;
+        }
+
+        .card-gif {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            z-index: 0;
+            transition: opacity 0.3s ease-out;
+        }
+
+        .card:hover .card-gif {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        .chinese-name {
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+            max-width: 90%;
+        }
+
+        .description {
+            font-size: 16px;
+            letter-spacing: 1.5px;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 5;
+            overflow: hidden;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+
+        .score-box {
+            width: 35px;
+            height: 35px;
+            position: absolute;
+            top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border-radius: 4px;
+            z-index: 2;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .steam-score {
+            left: 10px;
+            background: #28a745;
+            font-size: 18px;
+        }
+
+        .home-score {
+            left: 55px;
+            background: #dc3545;
+            font-size: 18px;
+        }
+
+        .lang-box {
+            right: 10px;
+            background: #6c757d;
+            font-size: 16px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 5px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .pagination button:hover:not(.active) {
+            background: #f0f0f0;
+        }
+
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .search-container { 
+            width:1600px; 
+            height:40px; 
+            margin:0 auto 30px; 
+            display: flex; 
+            gap:10px; 
+        }
+
+        .filter-btn { 
+            background-color: #2a2a2a; 
+            color:white; 
+            border:none; 
+            padding:0 20px; 
+            cursor: pointer; 
+            border-radius:8px; 
+        }
+
+        .search-box { 
+            flex:1; 
+            background: white; 
+            border-radius:20px; 
+            padding:0 20px; 
+            display: flex; 
+            align-items: center; 
+            box-shadow:0 2px 4px rgba(0,0,0,0.1); 
+        }
+
+        #search-input { 
+            flex:1; 
+            border:none; 
+            outline:none; 
+            font-size:16px; 
+        }
+
+        #footer { 
+            background-color: #1a1a1a; 
+            height:150px; 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            color:white; 
+        }
+
+        .footer-text { 
+            font-size:12px; 
+            letter-spacing:1.5px; 
+            color:#888; 
+        }
+
+        .upload-btn { 
+            padding:15px 40px; 
+            background:#2a2a2a; 
+            color:white; 
+            border:none; 
+            border-radius:30px; 
+            cursor: pointer; 
+            font-size:18px; 
+            transition:all 0.3s; 
+        }
+
+        /* ================= 详情页新增样式 ================= */
+        #details-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .detail-content {
+            max-width: 1600px;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 0 auto;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .download-btn {
+            background: #000;
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .disclaimer {
+            margin-top: 10px;
+            color: #999;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .back-btn {
+            background: #000;
+            color: white;
+            padding: 8px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 20px;
+        }
+
+        .screenshot-container {
+            position: relative;
+            height: 500px;
+            margin: 20px auto;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .screenshot {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: zoom-in;
+        }
+
+        .arrow-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 24px;
+            transition: opacity 0.3s;
+        }
+
+        .arrow-btn:hover {
+            opacity: 0.8;
+        }
+
+        .prev-btn { left: 10px; }
+        .next-btn { right: 10px; }
+
+        .detail-main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .media-section {
+            position: relative;
+        }
+
+        .thumbnail-nav {
+            display: flex;
+            gap: 10px;
+            padding-bottom: 10px;
+            overflow-x: auto;
+        }
+
+        .thumbnail-item {
+            width: 80px;
+            height: 45px;
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            object-fit: cover;
+        }
+
+        .thumbnail-item.active,
+        .thumbnail-item:hover {
+            opacity: 1;
+            border-color: #007bff;
+        }
+
+        .content-section {
+            padding: 15px;
+        }
+
+        .detail-tabs {
+            display: flex;
+            gap: 15px;
+            margin: 0 0 25px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            background: #f0f0f0;
+            color: #666;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: #2a2a2a;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .content-box {
+            display: none;
+            background: #fff;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            line-height: 1.8;
+            font-size: 15px;
+            color: #444;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .content-box.active {
+            display: block;
+        }
+
+        .review-content {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+
+        .player-content {
+            background: #fff8f6;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .official-content {
+            background: #f0faff;
+            border-left: 4px solid #00a8ff;
+        }
+
+        @media (max-width: 1200px) {
+            .detail-main-layout {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            
+            .screenshot-container {
+                height: 400px;
+            }
+            
+            .thumbnail-item {
+                width: 60px;
+                height: 35px;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部 -->
+    <header id="header">
+        <img id="logo" alt="网站logo" onclick="location.reload()" style="cursor: pointer;">
+    </header>
+
+    <!-- 主内容区 -->
+    <main id="main">
+        <div class="search-container">
+            <button class="filter-btn" onclick="toggleTags()">标签过滤</button>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="搜索游戏中文名...">
+                <button class="filter-btn">搜索</button>
+            </div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="grid"></div>
+            <div class="pagination"></div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer id="footer">
+        <div class="footer-text"></div>
+    </footer>
+
+    <!-- 详情页 -->
+    <div id="details-container">
+        <div class="detail-content">
+            <div class="detail-header">
+                <button class="back-btn">返回</button>
+                <h1 class="chinese-name"></h1>
+                <button class="download-btn">下载</button>
+            </div>
+            <div class="disclaimer"></div>
+
+            <div class="detail-main-layout">
+                <!-- 左侧媒体区 -->
+                <div class="media-section">
+                    <div class="screenshot-container">
+                        <button class="arrow-btn prev-btn">&lt;</button>
+                        <img class="screenshot" src="">
+                        <button class="arrow-btn next-btn">&gt;</button>
+                    </div>
+                    <div class="thumbnail-nav"></div>
+                </div>
+
+                <!-- 右侧内容区 -->
+                <div class="content-section">
+                    <div class="detail-tabs">
+                        <button class="tab-btn official-btn">官方介绍</button>
+                        <button class="tab-btn review-btn active">详情介绍</button>
+                        <button class="tab-btn player-btn">玩家评价</button>
+                    </div>
+
+                    <div class="content-box official-content"></div>
+                    <div class="content-box review-content active"></div>
+                    <div class="content-box player-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script>
+        // 初始化数据
+        let allCardsData = [];
+        let currentPage = 1;
+        const itemsPerPage = 9;
+        let downloadCount = 0;
+
+        // ✅ 修改后的自动加载逻辑（替换原上传代码）
+        window.addEventListener('DOMContentLoaded', function() {
+            const excelUrl = 'https://raw.githubusercontent.com/bihuwo/game-website/main/x.xlsx';
+
+            fetch(excelUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.arrayBuffer();
+                })
+                .then(data => {
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+                    const headers = jsonData[0];
+                    const firstDataRow = jsonData[1];
+                    
+                    if(headers.includes('logo') && firstDataRow[headers.indexOf('logo')]) {
+                        document.getElementById('logo').src = firstDataRow[headers.indexOf('logo')];
+                    }
+
+                    if(headers.includes('文字说明栏') && firstDataRow[headers.indexOf('文字说明栏')]) {
+                        document.querySelector('.footer-text').textContent = firstDataRow[headers.indexOf('文字说明栏')];
+                    }
+
+                    allCardsData = jsonData.slice(2)
+                        .filter(row => row[headers.indexOf('中文名')])
+                        .map(row => {
+                            const item = {};
+                            headers.forEach((header, index) => {
+                                item[header] = row[index];
+                            });
+                            return item;
+                        });
+
+                    renderPage(1);
+                    setupPagination();
+                })
+                .catch(error => {
+                    console.error('加载失败:', error);
+                    alert('错误: ' + error.message);
+                });
+        });
+
+        // 搜索功能
+        document.querySelector('.search-box button').addEventListener('click', performSearch);
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        function performSearch() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filteredData = allCardsData.filter(item => 
+                item['中文名'].toLowerCase().includes(searchTerm)
+            );
+            allCardsData = filteredData;
+            currentPage = 1;
+            renderPage(currentPage);
+            setupPagination();
+        }
+
+        // 分页渲染
+        function renderPage(page) {
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = allCardsData.slice(start, end);
+
+            const grid = document.querySelector('.grid');
+            grid.innerHTML = '';
+
+            pageData.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = start + index;
+                card.innerHTML = `
+                    <div class="card-top">
+                        <img src="${item.封面}" style="height:100%;width:100%;object-fit:cover;">
+                        <div class="score-box steam-score">${item.steam评分}</div>
+                        <div class="score-box home-score">${item.小窝评分}</div>
+                        <div class="score-box lang-box">${item.语言}</div>
+                    </div>
+                    <div class="card-middle">
+                        <div class="chinese-name">${item.中文名}</div>
+                        <div class="description">${item.简介}</div>
+                    </div>
+                    <div class="card-bottom">
+                        <div>${item.资源状态}</div>
+                        <div>${item.更新时间}</div>
+                    </div>
+                    <img class="card-gif" src="${item.动图}">
+                `;
+                grid.appendChild(card);
+            });
+
+            setupCardEvents();
+        }
+
+        // 卡片点击事件
+        function setupCardEvents() {
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const index = parseInt(card.dataset.index);
+                    const data = allCardsData[index];
+                    showDetails(data);
+                });
+            });
+        }
+
+        // 分页导航
+        function setupPagination() {
+            const totalPages = Math.ceil(allCardsData.length / itemsPerPage);
+            const pagination = document.querySelector('.pagination');
+            pagination.innerHTML = '';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.innerHTML = '&lt;&lt;';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage(currentPage);
+                    setupPagination();
+                }
+            });
+            pagination.appendChild(prevBtn);
+
+            const pages = generatePageNumbers(totalPages, currentPage);
+            pages.forEach(page => {
+                if (page === '...') {
+                    const ellipsisBtn = document.createElement('button');
+                    ellipsisBtn.textContent = '...';
+                    ellipsisBtn.addEventListener('click', () => {
+                        const targetPage = prompt(`请输入跳转页码（1-${totalPages}）：`);
+                        const num = parseInt(targetPage);
+                        if (num && num > 0 && num <= totalPages) {
+                            currentPage = num;
+                            renderPage(num);
+                            setupPagination();
+                        }
+                    });
+                    pagination.appendChild(ellipsisBtn);
+                } else {
+                    const btn = document.createElement('button');
+                    btn.textContent = page;
+                    btn.className = page === currentPage ? 'active' : '';
+                    btn.addEventListener('click', () => {
+                        currentPage = page;
+                        renderPage(page);
+                        setupPagination();
+                    });
+                    pagination.appendChild(btn);
+                }
+            });
+
+            const nextBtn = document.createElement('button');
+            nextBtn.innerHTML = '&gt;&gt;';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPage(currentPage);
+                    setupPagination();
+                }
+            });
+            pagination.appendChild(nextBtn);
+        }
+
+        // 生成分页数字
+        function generatePageNumbers(totalPages, currentPage) {
+            const visiblePages = 5;
+            if (totalPages <= visiblePages) {
+                return Array.from({length: totalPages}, (_, i) => i + 1);
+            }
+
+            let pages = [1];
+            
+            if (currentPage > 3) pages.push('...');
+            if (currentPage === 3) pages.push(2);
+            
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+            
+            for (let i = start; i <= end; i++) {
+                if (!pages.includes(i)) pages.push(i);
+            }
+
+            if (currentPage < totalPages - 2) pages.push('...');
+            if (currentPage === totalPages - 2) pages.push(totalPages - 1);
+            
+            pages.push(totalPages);
+
+            return pages.filter((p, i, arr) => p !== arr[i+1]);
+        }
+
+        // 详情页功能
+        function showDetails(data) {
+            const detailContainer = document.getElementById('details-container');
+            const detailContent = detailContainer.querySelector('.detail-content');
+
+            // 填充基础信息
+            detailContent.querySelector('.chinese-name').textContent = data['中文名'];
+            detailContent.querySelector('.disclaimer').textContent = data['免责声明'];
+            
+            // 下载按钮
+            const downloadBtn = detailContent.querySelector('.download-btn');
+            let downloadCount = 0;
+            downloadBtn.onclick = () => {
+                const links = [data['下载链接1'], data['下载链接2']];
+                const currentLink = links[downloadCount % 2];
+                window.open(currentLink, '_blank');
+                downloadCount++;
+            };
+
+            // 返回按钮
+            detailContent.querySelector('.back-btn').onclick = hideDetails;
+
+            // 截图处理
+            const screenshots = [
+                data['截图1'],
+                data['截图2'],
+                data['截图3'],
+                data['截图4'],
+                data['截图5'],
+                data['动图']
+            ].filter(url => url);
+            
+            let currentImageIndex = 0;
+            const screenshotImg = detailContent.querySelector('.screenshot');
+            const thumbnailNav = detailContent.querySelector('.thumbnail-nav');
+
+            // 生成缩略图
+            thumbnailNav.innerHTML = screenshots
+                .map((url, index) => `
+                    <img class="thumbnail-item ${index === 0 ? 'active' : ''}" 
+                         src="${url}" 
+                         onclick="switchImage(${index})">
+                `)
+                .join('');
+
+            // 图片切换函数
+            window.switchImage = (index) => {
+                currentImageIndex = index;
+                updateImage();
+                thumbnailNav.querySelectorAll('.thumbnail-item').forEach((item, i) => {
+                    item.classList.toggle('active', i === index);
+                });
+            };
+
+            function updateImage() {
+                if(screenshots.length > 0) {
+                    screenshotImg.src = screenshots[currentImageIndex];
+                }
+            }
+
+            // 箭头按钮事件
+            detailContent.querySelector('.prev-btn').onclick = () => {
+                currentImageIndex = (currentImageIndex - 1 + screenshots.length) % screenshots.length;
+                switchImage(currentImageIndex);
+            };
+
+            detailContent.querySelector('.next-btn').onclick = () => {
+                currentImageIndex = (currentImageIndex + 1) % screenshots.length;
+                switchImage(currentImageIndex);
+            };
+
+            // 初始化图片
+            updateImage();
+
+            // 选项卡功能
+            const tabs = detailContent.querySelectorAll('.tab-btn');
+            const contents = detailContent.querySelectorAll('.content-box');
+
+            function activateTab(tabIndex) {
+                tabs.forEach(tab => tab.classList.remove('active'));
+                contents.forEach(content => content.classList.remove('active'));
+                
+                tabs[tabIndex].classList.add('active');
+                contents[tabIndex].classList.add('active');
+            }
+
+            tabs.forEach((tab, index) => {
+                tab.addEventListener('click', () => activateTab(index));
+            });
+
+            // 默认激活详情介绍
+            activateTab(1);
+
+            // 填充内容
+            detailContent.querySelector('.official-content').innerHTML = 
+                data['官方介绍'] || '暂无官方介绍';
+            detailContent.querySelector('.review-content').innerHTML = 
+                data['详情介绍'] || '暂无详情介绍';
+            detailContent.querySelector('.player-content').innerHTML = 
+                data['玩家评价'] || '暂无玩家评价';
+
+            // 显示详情页
+            detailContainer.style.display = 'block';
+            document.getElementById('main').style.display = 'none';
+            document.getElementById('header').style.display = 'none';
+            document.getElementById('footer').style.display = 'none';
+        }
+
+        function hideDetails() {
+            document.getElementById('details-container').style.display = 'none';
+            document.getElementById('main').style.display = 'block';
+            document.getElementById('header').style.display = 'flex';
+            document.getElementById('footer').style.display = 'flex';
+        }
+
+        // 内容格式化
+        function formatContent(text) {
+            return text.split('\n')
+                .filter(p => p.trim())
+                .map(p => `<p>${p}</p>`)
+                .join('');
+        }
+
+        // 标签过滤（占位）
+        function toggleTags() {
+            console.log('标签过滤功能待实现');
+        }
+    </script>
+</body>
+</html>
